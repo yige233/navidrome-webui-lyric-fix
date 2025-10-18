@@ -82024,11 +82024,22 @@ class pipLyricHandler extends EventTarget {
   container = html(
     "div",
     html("div", { class: "background" }),
-    html("div", { class: "backdrop" }, html("div", { class: "lyric-container" }, html("span", { class: "ol" }), html("span", { class: "tl" })), html("div", { class: "info hidden" })),
+    html(
+      "div",
+      { class: "backdrop" },
+      html("div", { class: "lyric-container-single hidden" }, html("span", { class: "ol" }), html("span", { class: "tl" })),
+      html(
+        "div",
+        { class: "lyric-container-dual" },
+        html("div", { class: "odd highlight" }, html("span", { class: "ol" }), html("span", { class: "tl" })),
+        html("div", { class: "even" }, html("span", { class: "ol" }), html("span", { class: "tl" }))
+      ),
+      html("div", { class: "info hidden" })
+    ),
     html("div", { class: "progress-bar" })
   );
-  /** @type {number} */
-  pipWidth = 600;
+  /** 是否启用注音 */
+  ruby = true;
   /** @type {{start:number,value:string}[]} */
   lyrics = [];
   /** @type {string} */
@@ -82062,12 +82073,37 @@ class pipLyricHandler extends EventTarget {
       align-items: center;
       justify-content: center;
     }
-    .lyric-container {
+    .lyric-container-single {
       color: #00e8ff;
       display: flex;
       flex-direction: column;
       text-align: center;
       user-select: none;
+    }
+    .lyric-container-dual {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      width: 90%;
+      user-select: none;
+      color: #ffffff
+    }
+    .lyric-container-dual > div {
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+    .lyric-container-dual .odd {
+      align-items: flex-start;
+      padding-top: 5px;
+    }
+    .lyric-container-dual .even {
+      align-items: flex-end;
+      padding-bottom: 5px;
+    }
+    .lyric-container-dual .highlight {
+      color: #00e8ff
     }
     .progress-bar {
       position: fixed;
@@ -82083,6 +82119,9 @@ class pipLyricHandler extends EventTarget {
     }
     .progress-bar.playing {
       background-color: #00e8ff;
+    }
+    .progress-bar.lrc-reloading {
+      background-color: #ffc107;
     }
     .hidden {
       display: none;
@@ -82111,8 +82150,9 @@ class pipLyricHandler extends EventTarget {
       Object.assign(infoObj, info);
       this.$(".info").textContent = Object.entries({
         ...infoObj,
-        offset: this.offset,
-        music: this.musicName,
+        歌词偏移: `${this.offset} 毫秒`,
+        歌曲: this.musicName,
+        注音: this.ruby ? "启用" : "禁用",
       })
         .map(([key, value]) => `${key}: ${value}`)
         .join("\n");
@@ -82140,7 +82180,7 @@ class pipLyricHandler extends EventTarget {
         elem.addEventListener("timeupdate", () => {
           const currentTime = elem.currentTime;
           const duration = elem.duration;
-          this.info({ progress: `${time(currentTime)} / ${time(duration)}` });
+          this.info({ 播放进度: `${time(currentTime)} / ${time(duration)}` });
           this.showLyric(currentTime);
         });
         elem.addEventListener("play", () => {
@@ -82159,8 +82199,8 @@ class pipLyricHandler extends EventTarget {
           this.progress.pause();
           cancelAnimationFrame(rafId);
         });
-        elem.addEventListener("volumechange", () => this.info({ volume: elem.volume }));
-        this.info({ volume: elem.volume });
+        elem.addEventListener("volumechange", () => this.info({ 音量: elem.volume }));
+        this.info({ 音量: elem.volume });
       })
       .catch(() => console.error("超时：没有找到audio元素"));
   }
@@ -82196,7 +82236,11 @@ class pipLyricHandler extends EventTarget {
     if (!("documentPictureInPicture" in window)) return console.log("浏览器不支持文档画中画");
     this.pip = await window.documentPictureInPicture.requestWindow().catch((e) => void console.error("打开画中画失败", e));
     if (!this.pip) return;
-    this.pip.addEventListener("contextmenu", (e) => (e.preventDefault(), this.pip.resizeTo(this.pipWidth + 30, 70)));
+    this.pip.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      if (this.$(".lyric-container-single.hidden")) return;
+      this.pip.resizeTo(this.$(".lyric-container-single").offsetWidth + 30, this.pip.outerHeight);
+    });
     this.pip.addEventListener("keyup", (e) => {
       const multipler = 5;
       const step = 100;
@@ -82215,11 +82259,25 @@ class pipLyricHandler extends EventTarget {
       if (hotKey("KeyI")(e)) {
         this.$(".info").classList.toggle("hidden");
       }
+      if (hotKey("KeyP")(e)) {
+        this.ruby = !this.ruby;
+      }
       if (hotKey("KeyT")(e)) {
-        this.$(".lyric-container > .tl").classList.toggle("hidden");
+        this.$a("span.tl").forEach((tl) => tl.classList.toggle("hidden"));
+      }
+      if (hotKey("KeyM")(e)) {
+        this.$(".lyric-container-single").classList.toggle("hidden");
+        this.$(".lyric-container-dual").classList.toggle("hidden");
       }
       if (hotKey("KeyR")(e)) {
         this.offset = 0;
+      }
+      if (hotKey("KeyR", "ctrl")(e)) {
+        if (this.musicId) {
+          const barStyle = this.$(".progress-bar").classList;
+          barStyle.add("lrc-reloading");
+          Promise.all([this.loadLyric(this.musicId), new Promise((resolve) => setTimeout(resolve, 300))]).finally(() => barStyle.remove("lrc-reloading"));
+        }
       }
       this.info();
     });
@@ -82228,16 +82286,48 @@ class pipLyricHandler extends EventTarget {
     this.pip.document.body.append(this.container);
   }
   showLyric(currentTime) {
-    const appliedTime = currentTime * 1000 + this.offset;
-    const firstLrcTime = this.lyrics[this.lyrics.length - 1]?.start ?? Infinity;
-    const { value: lyric = "" } = appliedTime <= firstLrcTime ? { value: this.musicName } : this.lyrics.find((i) => appliedTime >= i.start) ?? {};
-    this.dispatchEvent(new CustomEvent("lyric", { detail: lyric }));
-    if (this.pip) {
-      const [ol, tl] = this.$a(".lyric-container span");
+    const ruby = (text = "") => {
+      const makeRuby = (main, reading) => (reading ? html("ruby", main, html("rp", "("), html("rt", reading), html("rp", ")")) : main);
+      const cleared = text.replace("\\", "");
+      const matches = [...cleared.matchAll(/(?:^|\s)([^\s(]+?)\(([^)]+)\)/g)];
+      if (matches.length === 0) return [text];
+      const separator = new RegExp(matches.map((i) => i[0].replace(/[()]/g, "\\$&")).join("|"), "g");
+      const splitted = cleared.split(separator);
+      const processed = matches.map((i) => makeRuby(i[1], i[2]));
+      return splitted.map((v, i) => [v, processed[i]].filter((i) => typeof i !== "undefined")).flat();
+    };
+
+    const fillLyric = (selector, lyric) => {
+      const [ol, tl] = this.$a(selector);
       const [olText, tlText] = lyric.split("\n");
-      ol.textContent = olText ?? "";
+      ol.innerHTML = "";
+      if (olText) {
+        const applied = olText === this.musicName || !this.ruby ? [olText] : ruby(olText);
+        ol.append(...applied);
+      }
       tl.textContent = tlText ?? "";
-      this.pipWidth = Math.max(ol.offsetWidth, tl.offsetWidth);
+    };
+    const appliedTime = currentTime * 1000 + this.offset;
+    const currentLrcIndex = this.lyrics.findLastIndex((i) => appliedTime >= i.start);
+    const currentLyric = this.lyrics[currentLrcIndex]?.value ?? this.musicName;
+    const nextLyric = this.lyrics[currentLrcIndex + 1]?.value ?? "";
+    const lineNumber = currentLrcIndex + 1;
+    if (this.lastLyricIndex == currentLrcIndex) return;
+    this.lastLyricIndex = currentLrcIndex;
+    this.dispatchEvent(new CustomEvent("lyric", { detail: currentLyric }));
+    if (this.pip) {
+      fillLyric(".lyric-container-single span", currentLyric);
+      if (lineNumber % 2 === 1) {
+        fillLyric(".lyric-container-dual > .odd span", currentLyric);
+        fillLyric(".lyric-container-dual > .even span", nextLyric);
+        this.$(".lyric-container-dual > .odd").classList.add("highlight");
+        this.$(".lyric-container-dual > .even").classList.remove("highlight");
+      } else {
+        fillLyric(".lyric-container-dual > .odd span", nextLyric);
+        fillLyric(".lyric-container-dual > .even span", currentLyric);
+        this.$(".lyric-container-dual > .odd").classList.remove("highlight");
+        this.$(".lyric-container-dual > .even").classList.add("highlight");
+      }
     }
   }
   async fetchLyric(id) {
@@ -82253,27 +82343,30 @@ class pipLyricHandler extends EventTarget {
       if (!Array.isArray(structuredLyrics) || structuredLyrics.length === 0) return [];
       return structuredLyrics;
     } catch (e) {
+      console.log(`获取歌词失败`, e);
       return [];
     }
   }
   songChange(state) {
     const { musicSrc, cover, singer, name } = state;
-    const musicId = new URLSearchParams(musicSrc).get("id");
     const bgImage = new URL(`${location.origin}${cover}`);
+    this.musicId = new URLSearchParams(musicSrc).get("id");
     this.progress.set(0, 0);
+    this.musicName = `${name} - ${singer}`;
     this.offset = 0;
-    this.lyrics = [];
+    this.lyrics = [{ start: -1, value: this.musicName }];
+    this.lastLyricIndex = -1;
     bgImage.searchParams.set("size", 600);
     this.$(".background").style.backgroundImage = `url(${bgImage.href})`;
-    this.musicName = `${name} - ${singer}`;
-    this.fetchLyric(musicId)
-      .then((lyric) => {
-        if (lyric.length === 0) return [];
-        lyric[0].offset && (this.offset = lyric[0].offset);
-        return pipLyricHandler.mergeLyric(lyric[0].line);
-      })
-      .then((lyric) => (this.lyrics = lyric.sort((a, b) => b.start - a.start)));
+    this.loadLyric(this.musicId);
     if (this.pip) this.pip.document.title = this.musicName;
+  }
+  async loadLyric(musicId) {
+    const [rawlrc = {}] = await this.fetchLyric(musicId);
+    if (rawlrc.offset) this.offset = rawlrc.offset;
+    const mergedLrc = pipLyricHandler.mergeLyric(rawlrc.line ?? []);
+    const appliedLrc = [{ start: -1, value: this.musicName }, ...mergedLrc.sort((a, b) => a.start - b.start)];
+    this.lyrics = appliedLrc;
   }
   get progress() {
     const progressbar = this.$(".progress-bar");
