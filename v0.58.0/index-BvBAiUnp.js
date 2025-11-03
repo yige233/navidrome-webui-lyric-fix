@@ -82048,6 +82048,11 @@ class pipLyricHandler extends EventTarget {
   offset = 0;
   /** 当前音乐播放位置 */
   currentTime = 0;
+  /**
+   * 从页面中找到的audio元素
+   * @type {HTMLAudioElement}
+   */
+  audioELem = null;
   static get pipStyle() {
     return `body {
       overflow: hidden;
@@ -82168,44 +82173,7 @@ class pipLyricHandler extends EventTarget {
         this.openPiP();
       }
     });
-    waitUntil("audio.music-player-audio")
-      .then((elem) => {
-        const time = (t) => `${Math.floor(t / 60)}:${padStart(Math.floor(t % 60))}${(t % 1).toFixed(2).slice(1).padEnd(2, "0")}`;
-        const animation = () => {
-          const currentTime = elem.currentTime;
-          const duration = elem.duration;
-          this.progress.set(currentTime, duration);
-          playing && (rafId = requestAnimationFrame(animation));
-        };
-        let playing = true;
-        let rafId = null;
-        elem.addEventListener("timeupdate", () => {
-          const currentTime = elem.currentTime;
-          const duration = elem.duration;
-          this.currentTime = currentTime;
-          this.info({ 播放进度: `${time(currentTime)} / ${time(duration)}` });
-          this.showLyric(currentTime);
-        });
-        elem.addEventListener("play", () => {
-          this.progress.play();
-          playing = true;
-          rafId = requestAnimationFrame(animation);
-        });
-        elem.addEventListener("pause", () => {
-          this.progress.pause();
-          playing = false;
-          cancelAnimationFrame(rafId);
-        });
-        elem.addEventListener("ended", () => {
-          playing = false;
-          this.progress.set(0, 0);
-          this.progress.pause();
-          cancelAnimationFrame(rafId);
-        });
-        elem.addEventListener("volumechange", () => this.info({ 音量: elem.volume }));
-        this.info({ 音量: elem.volume });
-      })
-      .catch(() => console.error("超时：没有找到audio元素"));
+    this.init();
   }
   static mergeLyric(lines) {
     const merged = [];
@@ -82234,6 +82202,47 @@ class pipLyricHandler extends EventTarget {
    */
   $a(selector) {
     return selector ? this.container.querySelectorAll(selector) : this.container.children;
+  }
+  init() {
+    waitUntil("audio.music-player-audio")
+      .then((elem) => {
+        const time = (t) => `${Math.floor(t / 60)}:${padStart(Math.floor(t % 60))}${(t % 1).toFixed(2).slice(1).padEnd(2, "0")}`;
+        const animation = () => {
+          const currentTime = elem.currentTime;
+          const duration = elem.duration;
+          this.progress.set(currentTime, duration);
+          playing && (rafId = requestAnimationFrame(animation));
+        };
+        this.audioELem = elem;
+        let playing = true;
+        let rafId = null;
+        elem.addEventListener("timeupdate", () => {
+          const currentTime = elem.currentTime;
+          const duration = elem.duration;
+          this.currentTime = currentTime;
+          this.info({ 播放进度: `${time(currentTime)} / ${time(duration)}` });
+          this.showLyric(currentTime);
+        });
+        elem.addEventListener("play", () => {
+          this.progress.play();
+          playing = true;
+          rafId = requestAnimationFrame(animation);
+        });
+        elem.addEventListener("pause", () => {
+          this.progress.pause();
+          playing = false;
+          cancelAnimationFrame(rafId);
+        });
+        elem.addEventListener("ended", () => {
+          playing = false;
+          this.progress.set(0, 0);
+          this.progress.pause();
+          cancelAnimationFrame(rafId);
+        });
+        elem.addEventListener("volumechange", () => this.info({ 音量: elem.volume }));
+        this.info({ 音量: elem.volume });
+      })
+      .catch(() => (this.audioELem = null));
   }
   async openPiP() {
     if (!("documentPictureInPicture" in window)) return console.log("浏览器不支持文档画中画");
@@ -82349,6 +82358,7 @@ class pipLyricHandler extends EventTarget {
     }
   }
   songChange(state) {
+    if (!this.audioELem) this.init();
     const { musicSrc, cover, singer, name } = state;
     const bgImage = new URL(`${location.origin}${cover}`);
     this.musicId = new URLSearchParams(musicSrc).get("id");

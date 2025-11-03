@@ -50,7 +50,7 @@ navidrome webui 使用的是 navidrome API，而该 API 并不支持外部 lrc �
   if (!resp.ok) {
     throw new TypeError("无法获取js资源");
   }
-  await cache.put(appJsURL, resp);
+  await cache.put(appJsURL, new Response(resp.body, { headers: resp.headers }));
   location.reload();
 })();
 ```
