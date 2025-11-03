@@ -82046,6 +82046,8 @@ class pipLyricHandler extends EventTarget {
   musicName;
   /** @type {number} */
   offset = 0;
+  /** 当前音乐播放位置 */
+  currentTime = 0;
   static get pipStyle() {
     return `body {
       overflow: hidden;
@@ -82180,6 +82182,7 @@ class pipLyricHandler extends EventTarget {
         elem.addEventListener("timeupdate", () => {
           const currentTime = elem.currentTime;
           const duration = elem.duration;
+          this.currentTime = currentTime;
           this.info({ 播放进度: `${time(currentTime)} / ${time(duration)}` });
           this.showLyric(currentTime);
         });
@@ -82234,14 +82237,15 @@ class pipLyricHandler extends EventTarget {
   }
   async openPiP() {
     if (!("documentPictureInPicture" in window)) return console.log("浏览器不支持文档画中画");
-    this.pip = await window.documentPictureInPicture.requestWindow().catch((e) => void console.error("打开画中画失败", e));
-    if (!this.pip) return;
-    this.pip.addEventListener("contextmenu", (e) => {
+    const pip = await window.documentPictureInPicture.requestWindow().catch((e) => void console.error("打开画中画失败", e));
+    if (!pip) return;
+    this.pip = pip;
+    pip.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       if (this.$(".lyric-container-single.hidden")) return;
-      this.pip.resizeTo(this.$(".lyric-container-single").offsetWidth + 30, this.pip.outerHeight);
+      pip.resizeTo(this.$(".lyric-container-single").offsetWidth + 30, pip.outerHeight);
     });
-    this.pip.addEventListener("keyup", (e) => {
+    pip.addEventListener("keydown", (e) => {
       const multipler = 5;
       const step = 100;
       if (hotKey("ArrowRight")(e)) {
@@ -82281,11 +82285,11 @@ class pipLyricHandler extends EventTarget {
       }
       this.info();
     });
-    this.pip.document.head.append(html("link", { rel: "icon", type: "image/png", sizes: "192x192", href: "./android-chrome-192x192.png" }));
-    this.pip.document.head.append(html("style", pipLyricHandler.pipStyle));
-    this.pip.document.body.append(this.container);
+    pip.document.head.append(html("link", { rel: "icon", type: "image/png", sizes: "192x192", href: "./android-chrome-192x192.png" }));
+    pip.document.head.append(html("style", pipLyricHandler.pipStyle));
+    pip.document.body.append(this.container);
   }
-  showLyric(currentTime) {
+  showLyric(currentTime, force = false) {
     const ruby = (text = "") => {
       const makeRuby = (main, reading) => (reading ? html("ruby", main, html("rp", "("), html("rt", reading), html("rp", ")")) : main);
       const cleared = text.replace("\\", "");
@@ -82309,25 +82313,22 @@ class pipLyricHandler extends EventTarget {
     };
     const appliedTime = currentTime * 1000 + this.offset;
     const currentLrcIndex = this.lyrics.findLastIndex((i) => appliedTime >= i.start);
+    if (this.lastLyricIndex == currentLrcIndex && !force) return;
+    this.lastLyricIndex = currentLrcIndex;
     const currentLyric = this.lyrics[currentLrcIndex]?.value ?? this.musicName;
     const nextLyric = this.lyrics[currentLrcIndex + 1]?.value ?? "";
-    const lineNumber = currentLrcIndex + 1;
-    if (this.lastLyricIndex == currentLrcIndex) return;
-    this.lastLyricIndex = currentLrcIndex;
     this.dispatchEvent(new CustomEvent("lyric", { detail: currentLyric }));
-    if (this.pip) {
-      fillLyric(".lyric-container-single span", currentLyric);
-      if (lineNumber % 2 === 1) {
-        fillLyric(".lyric-container-dual > .odd span", currentLyric);
-        fillLyric(".lyric-container-dual > .even span", nextLyric);
-        this.$(".lyric-container-dual > .odd").classList.add("highlight");
-        this.$(".lyric-container-dual > .even").classList.remove("highlight");
-      } else {
-        fillLyric(".lyric-container-dual > .odd span", nextLyric);
-        fillLyric(".lyric-container-dual > .even span", currentLyric);
-        this.$(".lyric-container-dual > .odd").classList.remove("highlight");
-        this.$(".lyric-container-dual > .even").classList.add("highlight");
-      }
+    fillLyric(".lyric-container-single span", currentLyric);
+    if (currentLrcIndex % 2 === 0) {
+      fillLyric(".lyric-container-dual > .odd span", currentLyric);
+      fillLyric(".lyric-container-dual > .even span", nextLyric);
+      this.$(".lyric-container-dual > .odd").classList.add("highlight");
+      this.$(".lyric-container-dual > .even").classList.remove("highlight");
+    } else {
+      fillLyric(".lyric-container-dual > .odd span", nextLyric);
+      fillLyric(".lyric-container-dual > .even span", currentLyric);
+      this.$(".lyric-container-dual > .odd").classList.remove("highlight");
+      this.$(".lyric-container-dual > .even").classList.add("highlight");
     }
   }
   async fetchLyric(id) {
@@ -82367,6 +82368,7 @@ class pipLyricHandler extends EventTarget {
     const mergedLrc = pipLyricHandler.mergeLyric(rawlrc.line ?? []);
     const appliedLrc = [{ start: -1, value: this.musicName }, ...mergedLrc.sort((a, b) => a.start - b.start)];
     this.lyrics = appliedLrc;
+    this.showLyric(this.currentTime, true);
   }
   get progress() {
     const progressbar = this.$(".progress-bar");
