@@ -35,13 +35,15 @@ navidrome webui 使用的是 navidrome API，而该 API 并不支持外部 lrc �
 
 ## 使用修改后的 js 文件替代原有的 js 文件
 
+_示例适用于：navidrome v0.58.5_
+
 1. 在 webui 中打开浏览器的 devtool，然后执行下列代码：
 
 ```javascript
 (async function () {
   /** navidrome v0.58 */
-  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.58.0/index-BvBAiUnp.js`;
-  const appJsURL = `/app/assets/index-BvBAiUnp.js`;
+  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.58.5/index-DEuRB98q.js`;
+  const appJsURL = `/app/assets/index-DEuRB98q.js`;
 
   const [, cacheKey] = await caches.keys();
   const cache = await caches.open(cacheKey);
@@ -62,8 +64,8 @@ navidrome webui 使用的是 navidrome API，而该 API 并不支持外部 lrc �
     ServerName music.example.com
     ProxyVia On
     #这里是将js文件放到apache自带的静态目录中，提高反代访问速度。
-    ProxyPass "/app/assets/index-BvBAiUnp.js"  "http://localhost/index-BvBAiUnp.js"
-    ProxyPassReverse "/app/assets/index-BvBAiUnp.js"  "http://localhost/index-BvBAiUnp.js"
+    ProxyPass "/app/assets/index-DEuRB98q.js"  "http://localhost/index-DEuRB98q.js"
+    ProxyPassReverse "/app/assets/index-DEuRB98q.js"  "http://localhost/index-DEuRB98q.js"
     #这里反代navidrome
     ProxyPass "/"  "http://127.0.0.1:4500/"
     ProxyPassReverse "/"  "http://127.0.0.1:4500/"
