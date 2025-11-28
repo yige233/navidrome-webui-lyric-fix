@@ -41,7 +41,7 @@ _示例适用于：navidrome v0.58.5_
 
 ```javascript
 (async function () {
-  /** navidrome v0.58 */
+  /** navidrome v0.58.5 */
   const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.58.5/index-DEuRB98q.js`;
   const appJsURL = `/app/assets/index-DEuRB98q.js`;
 
