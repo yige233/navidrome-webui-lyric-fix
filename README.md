@@ -42,7 +42,7 @@ _示例适用于：navidrome v0.59.0_
 ```javascript
 (async function () {
   /** navidrome v0.59.0 */
-  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.58.5/index-ASG3RMXC.js`;
+  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.59.0/index-ASG3RMXC.js`;
   const appJsURL = `/app/assets/index-ASG3RMXC.js`;
 
   const [, cacheKey] = await caches.keys();
