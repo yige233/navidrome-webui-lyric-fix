@@ -82065,19 +82065,15 @@ class pipLyricHandler extends EventTarget {
         const animation = () => {
           const currentTime = elem.currentTime;
           const duration = elem.duration;
+          this.currentTime = currentTime;
+          this.info({ 播放进度: `${time(currentTime)} / ${time(duration)}` });
+          this.showLyric(currentTime);
           this.progress.set(currentTime, duration);
           playing && (rafId = requestAnimationFrame(animation));
         };
         this.audioELem = elem;
         let playing = true;
         let rafId = null;
-        elem.addEventListener("timeupdate", () => {
-          const currentTime = elem.currentTime;
-          const duration = elem.duration;
-          this.currentTime = currentTime;
-          this.info({ 播放进度: `${time(currentTime)} / ${time(duration)}` });
-          this.showLyric(currentTime);
-        });
         elem.addEventListener("play", () => {
           this.progress.play();
           playing = true;
