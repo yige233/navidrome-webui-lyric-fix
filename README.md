@@ -1,13 +1,13 @@
 # navidrome webui 歌词显示优化
 
-navidrome webui 使用的是 navidrome API，而该 API 并不支持外部 lrc 歌词文件，并且由于当前 webui 使用的播放器的限制，后续也不会“修复”该“bug”：https://github.com/navidrome/navidrome/issues/4148#issuecomment-2936319726
+navidrome webui 使用的是 navidrome API，而该 API 并不支持外部 lrc 歌词文件，并且由于当前 webui 使用的播放器的限制，后续也不会“修复”该“bug”：<https://github.com/navidrome/navidrome/issues/4148#issuecomment-2936319726>
 
 然而 navidrome 的 subsonic API 可以获取到外部 lrc 歌词，所以我们可以另外通过该 API 获取到歌词后，传递给播放器。只需要修改前端 js 代码就能做到。
 
 修改后的代码修复/增加/优化了如下功能：
 
 - 歌曲页的“随机播放全部”功能，可以获取到大于 500 首歌曲。
-- webui 自带的歌词会显示前一首歌的歌词。该 bug 似乎已由 https://github.com/navidrome/react-music-player/pull/1 修复，但实际上并未生效。
+- webui 自带的歌词会显示前一首歌的歌词。该 bug 似乎已由 <https://github.com/navidrome/react-music-player/pull/1> 修复，但实际上并未生效。
 - webui 自带的歌词可以显示为双行（通过 css:`white-space: break-spaces;`），可以实现显示歌词翻译的效果。
 - 右键“切换歌词”按钮，可以呼出一个始终置顶的小窗口，实现类似桌面歌词的效果。需要浏览器支持`documentPictureInPicture`API。
   - 默认状态下会显示双行歌词(不是指翻译，而是会显示当前歌词和下一句歌词)。可按`M`键在单行和双行显示中切换。
@@ -35,15 +35,15 @@ navidrome webui 使用的是 navidrome API，而该 API 并不支持外部 lrc �
 
 ## 使用修改后的 js 文件替代原有的 js 文件
 
-_示例适用于：navidrome v0.59.0_
+_示例适用于：navidrome v0.60.0。若需要其他版本，只需修改对应的版本号和js文件名_
 
 1. 在 webui 中打开浏览器的 devtool，然后执行下列代码：
 
 ```javascript
 (async function () {
   /** navidrome v0.59.0 */
-  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.59.0/index-ASG3RMXC.js`;
-  const appJsURL = `/app/assets/index-ASG3RMXC.js`;
+  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.60.0/index-Dqi1syET.js`;
+  const appJsURL = `/app/assets/index-Dqi1syET.js`;
 
   const [, cacheKey] = await caches.keys();
   const cache = await caches.open(cacheKey);
@@ -57,15 +57,15 @@ _示例适用于：navidrome v0.59.0_
 })();
 ```
 
-2. 或者在反代软件内重定向 js URL，以 Apache 为例：
+1. 或者在反代软件内重定向 js URL，以 Apache 为例：
 
 ```apache
 <VirtualHost *:443>
     ServerName music.example.com
     ProxyVia On
     #这里是将js文件放到apache自带的静态目录中，提高反代访问速度。
-    ProxyPass "/app/assets/index-ASG3RMXC.js"  "http://localhost/index-ASG3RMXC.js"
-    ProxyPassReverse "/app/assets/index-ASG3RMXC.js"  "http://localhost/index-ASG3RMXC.js"
+    ProxyPass "/app/assets/index-Dqi1syET.js"  "http://localhost/index-Dqi1syET.js"
+    ProxyPassReverse "/app/assets/index-Dqi1syET.js"  "http://localhost/index-Dqi1syET.js"
     #这里反代navidrome
     ProxyPass "/"  "http://127.0.0.1:4500/"
     ProxyPassReverse "/"  "http://127.0.0.1:4500/"
