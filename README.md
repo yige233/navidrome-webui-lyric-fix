@@ -41,9 +41,9 @@ _示例适用于：navidrome v0.60.0。若需要其他版本，只需修改对�
 
 ```javascript
 (async function () {
-  /** navidrome v0.59.0 */
-  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.60.0/index-Dqi1syET.js`;
-  const appJsURL = `/app/assets/index-Dqi1syET.js`;
+  /** navidrome v0.62.2 */
+  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.60.2/index-RTpmAgvsjs`;
+  const appJsURL = `/app/assets/index-RTpmAgvsjs`;
 
   const [, cacheKey] = await caches.keys();
   const cache = await caches.open(cacheKey);
@@ -64,8 +64,8 @@ _示例适用于：navidrome v0.60.0。若需要其他版本，只需修改对�
     ServerName music.example.com
     ProxyVia On
     #这里是将js文件放到apache自带的静态目录中，提高反代访问速度。
-    ProxyPass "/app/assets/index-Dqi1syET.js"  "http://localhost/index-Dqi1syET.js"
-    ProxyPassReverse "/app/assets/index-Dqi1syET.js"  "http://localhost/index-Dqi1syET.js"
+    ProxyPass "/app/assets/index-RTpmAgvsjs"  "http://localhost/index-RTpmAgvsjs"
+    ProxyPassReverse "/app/assets/index-RTpmAgvsjs"  "http://localhost/index-RTpmAgvsjs"
     #这里反代navidrome
     ProxyPass "/"  "http://127.0.0.1:4500/"
     ProxyPassReverse "/"  "http://127.0.0.1:4500/"
