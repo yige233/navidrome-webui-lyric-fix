@@ -117878,8 +117878,7 @@ class pipLyricHandler extends EventTarget {
       }
       tl.textContent = tlText ?? "";
     };
-    const appliedTime = currentTime * 1000 + this.offset;
-    const currentLrcIndex = this.lyrics.findLastIndex((i) => appliedTime >= i.start);
+    const currentLrcIndex = this.lyrics.findLastIndex((i) => currentTime * 1000 >= i.start + this.offset);
     if (this.lastLyricIndex == currentLrcIndex && !force) return;
     this.lastLyricIndex = currentLrcIndex;
     const currentLyric = this.lyrics[currentLrcIndex]?.value ?? this.musicName;
