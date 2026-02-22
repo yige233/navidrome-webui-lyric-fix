@@ -35,7 +35,7 @@ navidrome webui 使用的是 navidrome API，而该 API 并不支持外部 lrc �
 
 ## 使用修改后的 js 文件替代原有的 js 文件
 
-_示例适用于：navidrome v0.60.0。若需要其他版本，只需修改对应的版本号和js文件名_
+_示例适用于：navidrome v0.60.2 和 v0.60.3。若需要其他版本，只需修改对应的版本号和js文件名_
 
 1. 在 webui 中打开浏览器的 devtool，然后执行下列代码：
 
