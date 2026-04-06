@@ -6,7 +6,7 @@
 
 ```javascript
 /** Patch: 修改随机播放时的最大歌曲数量 */
-r.getList("song", { pagination: { page: 1, perPage: 99999 }, sort: { field: "random", order: "ASC" }, filter: e })
+r.getList("song", { pagination: { page: 1, perPage: 99999 }, sort: { field: "random", order: "ASC" }, filter: e });
 ```
 
 ## 2. 禁用原始的歌词切换功能
@@ -43,8 +43,20 @@ return { src: s, sizes: c, type: "image/png" };
       a.updateMediaSessionPositionState());
     /** Patch: 同步更新 pipLyric */
     pipLyric.songChange(i);
+
+    //或者
+
+    /**
+    * Patch: 同步更新 pipLyric。v0.61.0版本出现了一个bug，导致updateMediaSessionMetadata被调用时，
+    * 应该同步给mediaSession的元数据有可能还是空的，我们在这里用interval等待它更新了，再传递给pipLyric.songChange
+    */
+    let interval = setInterval(() => {
+    if (!a.state.cover) return;
+    pipLyric.songChange(r.state);
+    clearInterval(interval);
+    }, 1);
   }
-}),
+})
 ```
 
 ### 4. 更新我们自己的歌词到UI
