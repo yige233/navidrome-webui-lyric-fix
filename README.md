@@ -41,9 +41,9 @@ _v0.60.3和v0.60.2使用同一个js文件。_
 
 ```javascript
 (async function () {
-  /** navidrome v0.61.1 */
-  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.61.1/index-BlcozjYP.js`;
-  const appJsURL = `/app/assets/index-BlcozjYP.js`;
+  /** navidrome v0.61.2 */
+  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.61.2/index-C0pbL4NX.js`;
+  const appJsURL = `/app/assets/index-C0pbL4NX.js`;
 
   const [, cacheKey] = await caches.keys();
   const cache = await caches.open(cacheKey);
@@ -64,8 +64,8 @@ _v0.60.3和v0.60.2使用同一个js文件。_
     ServerName music.example.com
     ProxyVia On
     #这里是将js文件放到apache自带的静态目录中，提高反代访问速度。
-    ProxyPass "/app/assets/index-BlcozjYP.js"  "http://localhost/index-BlcozjYP.js"
-    ProxyPassReverse "/app/assets/index-BlcozjYP.js"  "http://localhost/index-BlcozjYP.js"
+    ProxyPass "/app/assets/index-C0pbL4NX.js"  "http://localhost/index-C0pbL4NX.js"
+    ProxyPassReverse "/app/assets/index-C0pbL4NX.js"  "http://localhost/index-C0pbL4NX.js"
     #这里反代navidrome
     ProxyPass "/"  "http://127.0.0.1:4500/"
     ProxyPassReverse "/"  "http://127.0.0.1:4500/"

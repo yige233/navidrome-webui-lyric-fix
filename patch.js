@@ -411,7 +411,7 @@ class pipLyricHandler extends EventTarget {
     if (!this.audioELem) this.init();
     const { musicSrc, cover, singer, name } = state;
     const bgImage = new URL(`${location.origin}${cover}`);
-    this.musicId = new URLSearchParams(musicSrc).get("id");
+    this.musicId = ((searchParams) => searchParams.get("mediaId") || searchParams.get("id"))(new URLSearchParams(musicSrc));
     this.progress.set(0, 0);
     this.musicName = `${name} - ${singer}`;
     this.offset = 0;
