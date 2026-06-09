@@ -6,7 +6,7 @@
 
 ```javascript
 /** Patch: 修改随机播放时的最大歌曲数量 */
-r.getList("song", { pagination: { page: 1, perPage: 99999 }, sort: { field: "random", order: "ASC" }, filter: e });
+n.getList("song", { pagination: { page: 1, perPage: 99999 }, sort: { field: "random", order: "ASC" }, filter: e })
 ```
 
 ## 2. 禁用原始的歌词切换功能
@@ -14,13 +14,14 @@ r.getList("song", { pagination: { page: 1, perPage: 99999 }, sort: { field: "ran
 修改了`onLyricChange`监听器，通过在函数开头添加一个`return`语句，使其失效。
 
 ```javascript
-bt(wt(a), "onLyricChange", function (i) {
+_t(r, "onLyricChange", function (a) {
   /** Patch: 禁用原始的歌词切换功能 */
   return;
-  var o = i.lineNum,
-    s = i.txt;
-  (a.setState({ currentLyric: s }), a.props.onAudioLyricChange && a.props.onAudioLyricChange(o, s));
+  var i = a.lineNum,
+    o = a.txt;
+  (r.setState({ currentLyric: o }), r.props.onAudioLyricChange && r.props.onAudioLyricChange(i, o));
 }),
+
 ```
 
 ## 3. 同步更新 pipLyric
@@ -28,35 +29,31 @@ bt(wt(a), "onLyricChange", function (i) {
 修改了`updateMediaSessionMetadata`监听器，在函数末尾调用我们的`pipLyric.songChange`函数。
 
 ```javascript
-bt(wt(a), "updateMediaSessionMetadata", function () {
-  if ("mediaSession" in navigator && a.props.showMediaSession) {
-    var i = a.state,
-      o = i.name,
-      s = i.cover,
-      u = i.singer,
-      l = { title: o, artist: u, album: o };
-    (s &&
-      (l.artwork = ["96x96", "128x128", "192x192", "256x256", "384x384", "512x512"].map(function (c) {
-return { src: s, sizes: c, type: "image/png" };
+_t(r, "updateMediaSessionMetadata", function () {
+  if ("mediaSession" in navigator && r.props.showMediaSession) {
+    var a = r.state,
+      i = a.name,
+      o = a.cover,
+      s = a.singer,
+      u = { title: i, artist: s, album: i };
+    (o &&
+      (u.artwork = ["96x96", "128x128", "192x192", "256x256", "384x384", "512x512"].map(function (l) {
+        return { src: o, sizes: l, type: "image/png" };
       })),
-      (navigator.mediaSession.metadata = new MediaMetadata(l)),
-      a.updateMediaSessionPositionState());
-    /** Patch: 同步更新 pipLyric */
-    pipLyric.songChange(i);
-
-    //或者
-
+      (navigator.mediaSession.metadata = new MediaMetadata(u)),
+      r.updateMediaSessionPositionState());
     /**
-    * Patch: 同步更新 pipLyric。v0.61.0版本出现了一个bug，导致updateMediaSessionMetadata被调用时，
-    * 应该同步给mediaSession的元数据有可能还是空的，我们在这里用interval等待它更新了，再传递给pipLyric.songChange
-    */
+     * Patch: 同步更新 pipLyric。v0.61.0版本出现了一个bug，导致updateMediaSessionMetadata被调用时，
+     * 应该同步给mediaSession的元数据有可能还是空的，我们在这里用interval等待它更新了，再传递给pipLyric.songChange
+     */
     let interval = setInterval(() => {
-    if (!a.state.cover) return;
-    pipLyric.songChange(r.state);
-    clearInterval(interval);
+      if (!r.state.cover) return;
+      pipLyric.songChange(r.state);
+      clearInterval(interval);
     }, 1);
   }
-})
+}),
+
 ```
 
 ### 4. 更新我们自己的歌词到UI
@@ -65,7 +62,7 @@ return { src: s, sizes: c, type: "image/png" };
 
 ```javascript
 /** Patch: 监听歌词更新，然后更新ui上显示的歌词 */
-pipLyric.addEventListener("lyric", ({ detail }) => a.setState({ currentLyric: detail })),
+pipLyric.addEventListener("lyric", ({ detail }) => r.setState({ currentLyric: detail })),
 ```
 
 ### 5. 核心功能
