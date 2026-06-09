@@ -103,6 +103,10 @@ class pipLyricHandler extends EventTarget {
   offset = 0;
   /** 当前音乐播放位置 */
   currentTime = 0;
+  /** info 是否被 KeyI 强制锁定显示 */
+  infoLocked = false;
+  /** info 自动隐藏计时器 id */
+  infoHideTimer = null;
   /**
    * 从页面中找到的audio元素
    * @type {HTMLAudioElement}
@@ -208,18 +212,44 @@ class pipLyricHandler extends EventTarget {
   }
   info = (() => {
     const infoObj = {};
-    return (info = {}) => {
+    /** @type {Record<string, HTMLSpanElement>} */
+    const lines = {};
+    const fn = (info = {}) => {
       Object.assign(infoObj, info);
-      this.$(".info").textContent = Object.entries({
+      const entries = Object.entries({
         ...infoObj,
         歌词偏移: `${this.offset} 毫秒`,
         歌曲: this.musicName,
         注音: this.ruby ? "启用" : "禁用",
-      })
-        .map(([key, value]) => `${key}: ${value}`)
-        .join("\n");
+      });
+      const container = this.$(".info");
+      for (const [key, value] of entries) {
+        if (!lines[key]) {
+          const span = document.createElement("span");
+          container.append(span);
+          container.append(document.createTextNode("\n"));
+          lines[key] = span;
+        }
+        const text = `${key}: ${value}`;
+        if (lines[key].textContent !== text) {
+          lines[key].textContent = text;
+        }
+      }
     };
+    return fn;
   })();
+  /** 显示 info 并启动 5s 自动隐藏（如果未被锁定） */
+  showInfoTemporary(ms = 5000) {
+    if (this.infoLocked) return;
+    const infoEl = this.$(".info");
+    if (infoEl.classList.contains("hidden")) {
+      infoEl.classList.remove("hidden");
+    }
+    clearTimeout(this.infoHideTimer);
+    this.infoHideTimer = setTimeout(() => {
+      infoEl.classList.add("hidden");
+    }, ms);
+  }
   constructor() {
     super();
     window.addEventListener("contextmenu", (e) => {
@@ -310,24 +340,42 @@ class pipLyricHandler extends EventTarget {
       const step = 100;
       if (hotKey("ArrowRight")(e)) {
         this.offset += step;
+        this.showInfoTemporary();
       }
       if (hotKey("ArrowRight", `ctrl`)(e)) {
         this.offset += step * multipler;
+        this.showInfoTemporary();
       }
       if (hotKey("ArrowLeft")(e)) {
         this.offset -= step;
+        this.showInfoTemporary();
       }
       if (hotKey("ArrowLeft", `ctrl`)(e)) {
         this.offset -= step * multipler;
+        this.showInfoTemporary();
       }
       if (hotKey("KeyI")(e)) {
-        this.$(".info").classList.toggle("hidden");
+        this.showInfoTemporary();
+      }
+      if (hotKey("KeyI", "ctrl")(e)) {
+        this.infoLocked = !this.infoLocked;
+        if (this.infoLocked) {
+          clearTimeout(this.infoHideTimer);
+          const infoEl = this.$(".info");
+          if (infoEl.classList.contains("hidden")) {
+            infoEl.classList.remove("hidden");
+          }
+        } else {
+          this.showInfoTemporary();
+        }
       }
       if (hotKey("KeyP")(e)) {
         this.ruby = !this.ruby;
+        this.showInfoTemporary();
       }
       if (hotKey("KeyT")(e)) {
         this.$a("span.tl").forEach((tl) => tl.classList.toggle("hidden"));
+        this.showInfoTemporary();
       }
       if (hotKey("KeyM")(e)) {
         this.$(".lyric-container-single").classList.toggle("hidden");
@@ -335,6 +383,7 @@ class pipLyricHandler extends EventTarget {
       }
       if (hotKey("KeyR")(e)) {
         this.offset = 0;
+        this.showInfoTemporary();
       }
       if (hotKey("KeyR", "ctrl")(e)) {
         if (this.musicId) {
@@ -342,6 +391,7 @@ class pipLyricHandler extends EventTarget {
           barStyle.add("lrc-reloading");
           Promise.all([this.loadLyric(this.musicId), new Promise((resolve) => setTimeout(resolve, 300))]).finally(() => barStyle.remove("lrc-reloading"));
         }
+        this.showInfoTemporary();
       }
       this.info();
     });
@@ -415,6 +465,7 @@ class pipLyricHandler extends EventTarget {
     this.progress.set(0, 0);
     this.musicName = `${name} - ${singer}`;
     this.offset = 0;
+    this.currentTime = 0;
     this.lyrics = [{ start: -1, value: this.musicName }];
     this.lastLyricIndex = -1;
     bgImage.searchParams.set("size", 600);
