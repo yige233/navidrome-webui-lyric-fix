@@ -1,5 +1,8 @@
 # navidrome webui 歌词显示优化
 
+> [!IMPORTANT]
+> <https://github.com/navidrome/navidrome/pull/5733>如果合并，将会解决WebUI只能获取嵌入歌词的问题。
+
 navidrome webui 使用的是 navidrome API，而该 API 并不支持外部 lrc 歌词文件，并且由于当前 webui 使用的播放器的限制，后续也不会“修复”该“bug”：<https://github.com/navidrome/navidrome/issues/4148#issuecomment-2936319726>
 
 然而 navidrome 的 subsonic API 可以获取到外部 lrc 歌词，所以我们可以另外通过该 API 获取到歌词后，传递给播放器。只需要修改前端 js 代码就能做到。
@@ -42,9 +45,9 @@ _v0.60.3和v0.60.2使用同一个js文件。_
 
 ```javascript
 (async function () {
-  /** navidrome v0.62.0 */
-  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.62.0/index-8hY0OSWD.js`;
-  const appJsURL = `/app/assets/index-8hY0OSWD.js`;
+  /** navidrome v0.63.0 */
+  const jsURL = `https://cdn.jsdelivr.net/gh/yige233/navidrome-webui-lyric-fix@main/v0.63.0/index-BC2FYTT0.js`;
+  const appJsURL = `/app/assets/index-BC2FYTT0.js`;
 
   const [, cacheKey] = await caches.keys();
   const cache = await caches.open(cacheKey);
@@ -65,8 +68,8 @@ _v0.60.3和v0.60.2使用同一个js文件。_
     ServerName music.example.com
     ProxyVia On
     #这里是将js文件放到apache自带的静态目录中，提高反代访问速度。
-    ProxyPass "/app/assets/index-8hY0OSWD.js"  "http://localhost/index-8hY0OSWD.js"
-    ProxyPassReverse "/app/assets/index-8hY0OSWD.js"  "http://localhost/index-8hY0OSWD.js"
+    ProxyPass "/app/assets/index-BC2FYTT0.js"  "http://localhost/index-BC2FYTT0.js"
+    ProxyPassReverse "/app/assets/index-BC2FYTT0.js"  "http://localhost/index-BC2FYTT0.js"
     #这里反代navidrome
     ProxyPass "/"  "http://127.0.0.1:4500/"
     ProxyPassReverse "/"  "http://127.0.0.1:4500/"
