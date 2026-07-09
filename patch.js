@@ -355,7 +355,12 @@ class pipLyricHandler extends EventTarget {
         this.showInfoTemporary();
       }
       if (hotKey("KeyI")(e)) {
-        this.showInfoTemporary();
+        const infoEl = this.$(".info");
+        if (infoEl.classList.contains("hidden")) {
+          this.showInfoTemporary();
+        } else {
+          infoEl.classList.add("hidden");
+        }
       }
       if (hotKey("KeyI", "ctrl")(e)) {
         this.infoLocked = !this.infoLocked;
@@ -366,7 +371,7 @@ class pipLyricHandler extends EventTarget {
             infoEl.classList.remove("hidden");
           }
         } else {
-          this.showInfoTemporary();
+          this.$(".info").classList.add("hidden");
         }
       }
       if (hotKey("KeyP")(e)) {
